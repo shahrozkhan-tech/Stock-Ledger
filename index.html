@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Ledger — SK Nexus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+  --ink: #14181F;
+  --ink-soft: #1E242E;
+  --ink-line: #2C333F;
+  --paper: #F7F3EA;
+  --paper-dim: #EEE8D9;
+  --paper-line: #DDD4BC;
+  --amber: #E8A33D;
+  --amber-dark: #C9821F;
+  --text-on-ink: #EDEAE2;
+  --text-on-ink-dim: #9AA1AC;
+  --text-on-paper: #1A1A1A;
+  --text-on-paper-dim: #6B6456;
+  --good: #4C8C6B;
+  --bad: #C4453A;
+  --radius: 3px;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--paper);
+  color:var(--text-on-paper);
+  -webkit-font-smoothing:antialiased;
+}
+
+.app{
+  display:flex;
+  min-height:100vh;
+}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar{
+  width:230px;
+  flex-shrink:0;
+  background:var(--ink);
+  color:var(--text-on-ink);
+  display:flex;
+  flex-direction:column;
+  padding:24px 16px;
+  position:sticky;
+  top:0;
+  height:100vh;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 6px 20px;
+  border-bottom:1px solid var(--ink-line);
+  margin-bottom:20px;
+}
+.brand-mark{
+  font-family:'Zilla Slab',serif;
+  font-weight:700;
+  font-size:15px;
+  background:var(--amber);
+  color:var(--ink);
+  width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius);
+  flex-shrink:0;
+}
+.brand-text{display:flex;flex-direction:column;line-height:1.3;}
+.brand-text strong{font-family:'Zilla Slab',serif;font-size:15px;font-weight:600;}
+.brand-text span{font-size:11px;color:var(--text-on-ink-dim);}
+
+.nav{display:flex;flex-direction:column;gap:2px;flex:1;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  background:none;border:none;
+  color:var(--text-on-ink-dim);
+  font-family:'Inter',sans-serif;
+  font-size:14px;font-weight:500;
+  text-align:left;
+  padding:11px 10px;
+  border-radius:var(--radius);
+  cursor:pointer;
+  transition:background .12s ease, color .12s ease;
+}
+.nav-num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  color:var(--text-on-ink-dim);
+  width:18px;
+}
+.nav-item:hover{background:var(--ink-soft);color:var(--text-on-ink);}
+.nav-item.is-active{background:var(--ink-soft);color:var(--amber);}
+.nav-item.is-active .nav-num{color:var(--amber);}
+
+.sidebar-foot{display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid var(--ink-line);}
+
+/* ---------- MAIN ---------- */
+.main{flex:1;padding:36px 44px 60px;max-width:1100px;}
+.view{display:none;}
+.view.is-active{display:block;animation:fadein .18s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+.view-head{margin-bottom:26px;}
+.view-head h1{
+  font-family:'Zilla Slab',serif;
+  font-size:30px;
+  font-weight:600;
+  margin:0 0 4px;
+  color:var(--text-on-paper);
+}
+.view-head p{margin:0;color:var(--text-on-paper-dim);font-size:14.5px;}
+
+/* ---------- STATS ---------- */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+.stat-card{
+  background:#fff;
+  border:1px solid var(--paper-line);
+  border-radius:var(--radius);
+  padding:16px 18px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.stat-card--warn{border-color:var(--amber-dark);}
+.stat-label{font-size:12px;color:var(--text-on-paper-dim);font-weight:500;}
+.stat-value{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;}
+.stat-card--warn .stat-value{color:var(--amber-dark);}
+
+/* ---------- PANEL ---------- */
+.panel{
+  background:#fff;
+  border:1px solid var(--paper-line);
+  border-radius:var(--radius);
+  padding:20px;
+  margin-bottom:20px;
+}
+.panel--flush{padding:0;overflow:hidden;}
+.panel--flush .panel-head{padding:18px 20px 0;}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;}
+.panel-head h2{font-family:'Zilla Slab',serif;font-size:17px;font-weight:600;margin:0;}
+.panel-sub{font-size:12px;color:var(--text-on-paper-dim);}
+
+/* ---------- TABLE ---------- */
+.table{width:100%;border-collapse:collapse;font-size:13.5px;}
+.table th{
+  text-align:left;
+  font-size:11px;
+  font-weight:600;
+  color:var(--text-on-paper-dim);
+  padding:10px 20px;
+  border-bottom:1px solid var(--paper-line);
+  white-space:nowrap;
+}
+.panel:not(.panel--flush) .table th{padding:8px 4px;}
+.panel:not(.panel--flush) .table td{padding:9px 4px;}
+.table td{
+  padding:11px 20px;
+  border-bottom:1px solid var(--paper-dim);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;
+}
+.table td:first-child{font-family:'Inter',sans-serif;font-weight:500;}
+.table tbody tr:last-child td{border-bottom:none;}
+.table tbody tr:hover{background:var(--paper-dim);}
+.tag{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:20px;
+  font-family:'Inter',sans-serif;
+  font-size:11px;
+  font-weight:600;
+}
+.tag--in{background:#E4F0E9;color:var(--good);}
+.tag--out{background:#F6E4E1;color:var(--bad);}
+.row-actions{display:flex;gap:6px;}
+.row-actions button{
+  background:none;border:1px solid var(--paper-line);
+  border-radius:var(--radius);
+  font-family:'Inter',sans-serif;
+  font-size:12px;
+  padding:4px 9px;
+  cursor:pointer;
+  color:var(--text-on-paper-dim);
+}
+.row-actions button:hover{border-color:var(--ink);color:var(--ink);}
+
+.empty-note{color:var(--text-on-paper-dim);font-size:13px;padding:14px 20px;margin:0;}
+
+/* ---------- FORMS / BUTTONS ---------- */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.field-row{display:flex;gap:14px;}
+.field-row .field{flex:1;}
+label{font-size:12.5px;font-weight:600;color:var(--text-on-paper);}
+input,select{
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  padding:9px 11px;
+  border:1px solid var(--paper-line);
+  border-radius:var(--radius);
+  background:var(--paper);
+  color:var(--text-on-paper);
+}
+input:focus,select:focus,button:focus-visible{
+  outline:2px solid var(--amber-dark);
+  outline-offset:1px;
+}
+
+.primary-btn{
+  background:var(--ink);
+  color:var(--text-on-ink);
+  border:none;
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  font-size:14px;
+  padding:10px 18px;
+  border-radius:var(--radius);
+  cursor:pointer;
+}
+.primary-btn:hover{background:var(--ink-soft);}
+.ghost-btn{
+  background:none;
+  border:1px solid var(--paper-line);
+  color:var(--text-on-paper);
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  font-size:13px;
+  padding:9px 14px;
+  border-radius:var(--radius);
+  cursor:pointer;
+  text-align:center;
+  display:block;
+}
+.sidebar .ghost-btn{
+  border-color:var(--ink-line);
+  color:var(--text-on-ink-dim);
+  font-size:12px;
+}
+.sidebar .ghost-btn:hover{color:var(--text-on-ink);border-color:var(--text-on-ink-dim);}
+.danger-btn{
+  background:none;
+  border:1px solid var(--bad);
+  color:var(--bad);
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  font-size:13px;
+  padding:9px 14px;
+  border-radius:var(--radius);
+  cursor:pointer;
+}
+.form-msg{font-size:13px;margin:10px 0 0;min-height:16px;}
+.form-msg.is-error{color:var(--bad);}
+.form-msg.is-good{color:var(--good);}
+
+/* ---------- TOOLBAR ---------- */
+.toolbar{display:flex;gap:10px;margin-bottom:18px;}
+.toolbar input[type=search]{flex:1;}
+.toolbar select{width:180px;}
+
+/* ---------- TOGGLE ---------- */
+.toggle-group{display:flex;border:1px solid var(--paper-line);border-radius:var(--radius);overflow:hidden;}
+.toggle-btn{
+  flex:1;
+  background:var(--paper);
+  border:none;
+  padding:9px;
+  font-family:'Inter',sans-serif;
+  font-size:13px;
+  font-weight:600;
+  color:var(--text-on-paper-dim);
+  cursor:pointer;
+  border-right:1px solid var(--paper-line);
+}
+.toggle-btn:last-child{border-right:none;}
+.toggle-btn.is-active[data-type="in"]{background:var(--good);color:#fff;}
+.toggle-btn.is-active[data-type="out"]{background:var(--bad);color:#fff;}
+
+/* ---------- MOVE VIEW ---------- */
+.move-grid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:18px;align-items:start;}
+.item-preview{padding:0 4px;}
+.item-preview .ip-name{font-family:'Zilla Slab',serif;font-size:19px;font-weight:600;margin:0 0 10px;}
+.item-preview .ip-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--paper-dim);font-size:13.5px;}
+.item-preview .ip-row span:last-child{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+
+/* ---------- REPORTS ---------- */
+.report-options{display:flex;gap:12px;margin-bottom:18px;}
+.radio-card{
+  flex:1;
+  border:1px solid var(--paper-line);
+  border-radius:var(--radius);
+  padding:12px 14px;
+  cursor:pointer;
+  display:flex;flex-direction:column;gap:3px;
+  position:relative;
+}
+.radio-card input{position:absolute;top:12px;right:12px;}
+.radio-card:has(input:checked){border-color:var(--amber-dark);background:#FBF3E4;}
+.radio-title{font-weight:600;font-size:13.5px;}
+.radio-sub{font-size:11.5px;color:var(--text-on-paper-dim);}
+.report-actions{display:flex;gap:10px;}
+
+/* ---------- MODAL ---------- */
+.modal-backdrop{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(20,24,31,.55);
+  align-items:center;justify-content:center;
+  z-index:50;
+  padding:20px;
+}
+.modal-backdrop.is-open{display:flex;}
+.modal{
+  background:#fff;
+  border-radius:var(--radius);
+  width:100%;max-width:440px;
+  max-height:90vh;
+  overflow-y:auto;
+  padding:24px;
+}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.modal-head h2{font-family:'Zilla Slab',serif;font-size:19px;margin:0;}
+.icon-btn{background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--text-on-paper-dim);}
+.modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+
+/* ---------- TOAST ---------- */
+.toast{
+  position:fixed;
+  bottom:24px;left:50%;
+  transform:translate(-50%,20px);
+  background:var(--ink);
+  color:var(--text-on-ink);
+  padding:11px 20px;
+  border-radius:var(--radius);
+  font-size:13.5px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease, transform .18s ease;
+  z-index:100;
+}
+.toast.is-visible{opacity:1;transform:translate(-50%,0);}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 880px){
+  .app{flex-direction:column;}
+  .sidebar{width:100%;height:auto;position:relative;flex-direction:row;align-items:center;padding:14px 16px;}
+  .brand{border:none;padding:0;margin:0;}
+  .brand-text{display:none;}
+  .nav{flex-direction:row;gap:4px;}
+  .nav-item{padding:8px 10px;font-size:13px;}
+  .sidebar-foot{display:none;}
+  .main{padding:24px 18px 60px;}
+  .stat-row{grid-template-columns:repeat(2,1fr);}
+  .move-grid{grid-template-columns:1fr;}
+  .report-options{flex-direction:column;}
+  .table{display:block;overflow-x:auto;}
+}
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">SL</span>
+      <div class="brand-text">
+        <strong>Stock Ledger</strong>
+        <span>Local inventory system</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item is-active" data-view="dashboard">
+        <span class="nav-num">01</span> Dashboard
+      </button>
+      <button class="nav-item" data-view="stock">
+        <span class="nav-num">02</span> Stock List
+      </button>
+      <button class="nav-item" data-view="move">
+        <span class="nav-num">03</span> Add / Remove
+      </button>
+      <button class="nav-item" data-view="reports">
+        <span class="nav-num">04</span> Reports
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button id="exportAllBtn" class="ghost-btn">Export backup (.json)</button>
+      <label class="ghost-btn" for="importFile">Import backup</label>
+      <input type="file" id="importFile" accept="application/json" hidden>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <section class="view is-active" id="view-dashboard">
+      <header class="view-head">
+        <h1>Dashboard</h1>
+        <p>Aaj ka stock overview, ek nazar mein.</p>
+      </header>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <span class="stat-label">Total items</span>
+          <span class="stat-value" id="statTotalItems">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total stock qty</span>
+          <span class="stat-value" id="statTotalQty">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Stock value</span>
+          <span class="stat-value" id="statTotalValue">Rs 0</span>
+        </div>
+        <div class="stat-card stat-card--warn">
+          <span class="stat-label">Low stock</span>
+          <span class="stat-value" id="statLowStock">0</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Low stock items</h2>
+          <span class="panel-sub">Threshold se neeche</span>
+        </div>
+        <table class="table" id="lowStockTable">
+          <thead>
+            <tr><th>Item</th><th>SKU</th><th>Qty</th><th>Threshold</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="empty-note" id="lowStockEmpty">Sab items theek stock mein hain.</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Recent activity</h2>
+          <span class="panel-sub">Aakhri 8 transactions</span>
+        </div>
+        <table class="table" id="recentActivityTable">
+          <thead>
+            <tr><th>Date</th><th>Item</th><th>Type</th><th>Qty</th><th>Note</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- STOCK LIST -->
+    <section class="view" id="view-stock">
+      <header class="view-head">
+        <h1>Stock List</h1>
+        <p>Poora inventory, search aur filter ke saath.</p>
+      </header>
+
+      <div class="toolbar">
+        <input type="search" id="searchInput" placeholder="Naam ya SKU se search karein...">
+        <select id="categoryFilter">
+          <option value="">Sab categories</option>
+        </select>
+        <button class="primary-btn" id="openAddItemBtn">+ Naya item</button>
+      </div>
+
+      <div class="panel panel--flush">
+        <table class="table" id="stockTable">
+          <thead>
+            <tr>
+              <th>Item</th><th>SKU</th><th>Category</th><th>Qty</th><th>Price</th><th>Value</th><th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="empty-note" id="stockEmpty">Abhi koi item nahi. "Naya item" par click karein.</p>
+      </div>
+    </section>
+
+    <!-- ADD / REMOVE STOCK -->
+    <section class="view" id="view-move">
+      <header class="view-head">
+        <h1>Add / Remove Stock</h1>
+        <p>Naya maal aane ya bikne/nikalne par yahan record karein.</p>
+      </header>
+
+      <div class="move-grid">
+        <form class="panel form" id="moveForm">
+          <div class="field">
+            <label for="moveItemSelect">Item</label>
+            <select id="moveItemSelect" required></select>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label>Type</label>
+              <div class="toggle-group">
+                <button type="button" class="toggle-btn is-active" data-type="in">Stock In (+)</button>
+                <button type="button" class="toggle-btn" data-type="out">Stock Out (−)</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="moveQty">Quantity</label>
+              <input type="number" id="moveQty" min="1" step="1" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="moveNote">Note (optional)</label>
+            <input type="text" id="moveNote" placeholder="e.g. Naya order aaya / Customer ko becha">
+          </div>
+
+          <button type="submit" class="primary-btn">Record karein</button>
+          <p class="form-msg" id="moveMsg"></p>
+        </form>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Selected item</h2>
+          </div>
+          <div id="moveItemPreview" class="item-preview">
+            <p class="empty-note">Item select karein details dekhne ke liye.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Transaction history</h2>
+        </div>
+        <table class="table" id="txTable">
+          <thead>
+            <tr><th>Date</th><th>Item</th><th>Type</th><th>Qty</th><th>Note</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="empty-note" id="txEmpty">Koi transaction nahi hui abhi tak.</p>
+      </div>
+    </section>
+
+    <!-- REPORTS -->
+    <section class="view" id="view-reports">
+      <header class="view-head">
+        <h1>Reports</h1>
+        <p>Report banayein aur CSV file ke roop mein download karein.</p>
+      </header>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Report type</h2>
+        </div>
+        <div class="report-options">
+          <label class="radio-card">
+            <input type="radio" name="reportType" value="full" checked>
+            <span class="radio-title">Full stock report</span>
+            <span class="radio-sub">Sab items, qty, price, value</span>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="reportType" value="low">
+            <span class="radio-title">Low stock report</span>
+            <span class="radio-sub">Sirf threshold se neeche items</span>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="reportType" value="transactions">
+            <span class="radio-title">Transaction report</span>
+            <span class="radio-sub">Stock in/out ki poori list</span>
+          </label>
+        </div>
+
+        <div class="field-row" id="dateRangeRow">
+          <div class="field">
+            <label for="reportFrom">From (optional)</label>
+            <input type="date" id="reportFrom">
+          </div>
+          <div class="field">
+            <label for="reportTo">To (optional)</label>
+            <input type="date" id="reportTo">
+          </div>
+        </div>
+
+        <div class="report-actions">
+          <button class="primary-btn" id="previewReportBtn">Preview</button>
+          <button class="ghost-btn" id="downloadReportBtn">Download CSV</button>
+        </div>
+      </div>
+
+      <div class="panel panel--flush">
+        <div class="panel-head">
+          <h2>Preview</h2>
+        </div>
+        <table class="table" id="reportTable">
+          <thead><tr></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="empty-note" id="reportEmpty">"Preview" dabayein report dekhne ke liye.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Add / Edit item modal -->
+<div class="modal-backdrop" id="itemModalBackdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="itemModalTitle">Naya item</h2>
+      <button class="icon-btn" id="closeItemModalBtn">×</button>
+    </div>
+    <form id="itemForm" class="form">
+      <input type="hidden" id="itemId">
+      <div class="field">
+        <label for="itemName">Item ka naam</label>
+        <input type="text" id="itemName" required>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="itemSku">SKU / Code</label>
+          <input type="text" id="itemSku" required>
+        </div>
+        <div class="field">
+          <label for="itemCategory">Category</label>
+          <input type="text" id="itemCategory" list="categoryList" placeholder="e.g. Electronics">
+          <datalist id="categoryList"></datalist>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="itemQty">Quantity</label>
+          <input type="number" id="itemQty" min="0" step="1" required>
+        </div>
+        <div class="field">
+          <label for="itemPrice">Price (per unit)</label>
+          <input type="number" id="itemPrice" min="0" step="0.01" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="itemThreshold">Low stock threshold</label>
+        <input type="number" id="itemThreshold" min="0" step="1" value="5">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="danger-btn" id="deleteItemBtn" hidden>Delete item</button>
+        <button type="submit" class="primary-btn">Save item</button>
+      </div>
+      <p class="form-msg" id="itemFormMsg"></p>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* =========================================================================
+   STOCK LEDGER — app logic
+   -------------------------------------------------------------------------
+   DATA LAYER NOTE (for whoever builds the real database):
+   Everything that reads/writes data goes through the `Store` object below.
+   Right now `Store` saves to the browser's localStorage. To connect a real
+   database later, you only need to rewrite the functions inside `Store`
+   (getItems, saveItems, getTransactions, saveTransactions) to call your
+   API instead — nothing else in this file needs to change.
+   See database-guide.md for the exact fields/tables expected.
+   ========================================================================= */
+
+const Store = {
+  ITEMS_KEY: 'stockledger_items',
+  TX_KEY: 'stockledger_transactions',
+
+  getItems() {
+    return JSON.parse(localStorage.getItem(this.ITEMS_KEY) || '[]');
+  },
+  saveItems(items) {
+    localStorage.setItem(this.ITEMS_KEY, JSON.stringify(items));
+  },
+  getTransactions() {
+    return JSON.parse(localStorage.getItem(this.TX_KEY) || '[]');
+  },
+  saveTransactions(tx) {
+    localStorage.setItem(this.TX_KEY, JSON.stringify(tx));
+  }
+};
+
+function uid(prefix) {
+  return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function money(n) {
+  return 'Rs ' + Number(n).toLocaleString('en-PK', { maximumFractionDigits: 2 });
+}
+
+function todayISO() {
+  return new Date().toISOString();
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) +
+    ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+/* ---------------------------------------------------------------------- */
+/* NAVIGATION                                                             */
+/* ---------------------------------------------------------------------- */
+const navItems = document.querySelectorAll('.nav-item');
+const views = document.querySelectorAll('.view');
+
+navItems.forEach(btn => {
+  btn.addEventListener('click', () => {
+    navItems.forEach(b => b.classList.remove('is-active'));
+    views.forEach(v => v.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    document.getElementById('view-' + btn.dataset.view).classList.add('is-active');
+    if (btn.dataset.view === 'dashboard') renderDashboard();
+    if (btn.dataset.view === 'stock') renderStockList();
+    if (btn.dataset.view === 'move') renderMoveView();
+  });
+});
+
+/* ---------------------------------------------------------------------- */
+/* TOAST                                                                  */
+/* ---------------------------------------------------------------------- */
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('is-visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('is-visible'), 2400);
+}
+
+/* ---------------------------------------------------------------------- */
+/* ITEM MODAL (Add / Edit)                                                */
+/* ---------------------------------------------------------------------- */
+const itemModalBackdrop = document.getElementById('itemModalBackdrop');
+const itemForm = document.getElementById('itemForm');
+const itemFormMsg = document.getElementById('itemFormMsg');
+const deleteItemBtn = document.getElementById('deleteItemBtn');
+
+function openItemModal(item = null) {
+  itemForm.reset();
+  itemFormMsg.textContent = '';
+  populateCategoryDatalist();
+
+  if (item) {
+    document.getElementById('itemModalTitle').textContent = 'Item edit karein';
+    document.getElementById('itemId').value = item.id;
+    document.getElementById('itemName').value = item.name;
+    document.getElementById('itemSku').value = item.sku;
+    document.getElementById('itemCategory').value = item.category;
+    document.getElementById('itemQty').value = item.qty;
+    document.getElementById('itemPrice').value = item.price;
+    document.getElementById('itemThreshold').value = item.threshold;
+    deleteItemBtn.hidden = false;
+  } else {
+    document.getElementById('itemModalTitle').textContent = 'Naya item';
+    document.getElementById('itemId').value = '';
+    document.getElementById('itemThreshold').value = 5;
+    deleteItemBtn.hidden = true;
+  }
+  itemModalBackdrop.classList.add('is-open');
+}
+
+function closeItemModal() {
+  itemModalBackdrop.classList.remove('is-open');
+}
+
+document.getElementById('openAddItemBtn').addEventListener('click', () => openItemModal());
+document.getElementById('closeItemModalBtn').addEventListener('click', closeItemModal);
+itemModalBackdrop.addEventListener('click', (e) => {
+  if (e.target === itemModalBackdrop) closeItemModal();
+});
+
+itemForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const id = document.getElementById('itemId').value;
+  const name = document.getElementById('itemName').value.trim();
+  const sku = document.getElementById('itemSku').value.trim();
+  const category = document.getElementById('itemCategory').value.trim() || 'Uncategorised';
+  const qty = Number(document.getElementById('itemQty').value);
+  const price = Number(document.getElementById('itemPrice').value);
+  const threshold = Number(document.getElementById('itemThreshold').value) || 0;
+
+  const items = Store.getItems();
+
+  const dupe = items.find(it => it.sku.toLowerCase() === sku.toLowerCase() && it.id !== id);
+  if (dupe) {
+    itemFormMsg.textContent = 'Yeh SKU pehle se maujood hai.';
+    itemFormMsg.className = 'form-msg is-error';
+    return;
+  }
+
+  if (id) {
+    const idx = items.findIndex(it => it.id === id);
+    items[idx] = { ...items[idx], name, sku, category, qty, price, threshold };
+  } else {
+    items.push({
+      id: uid('item'),
+      name, sku, category, qty, price, threshold,
+      createdAt: todayISO()
+    });
+  }
+
+  Store.saveItems(items);
+  toast(id ? 'Item update ho gaya.' : 'Naya item add ho gaya.');
+  closeItemModal();
+  renderStockList();
+  renderDashboard();
+  renderMoveView();
+});
+
+deleteItemBtn.addEventListener('click', () => {
+  const id = document.getElementById('itemId').value;
+  if (!id) return;
+  if (!confirm('Yeh item delete karna hai? Iski transaction history bhi rahegi.')) return;
+  let items = Store.getItems();
+  items = items.filter(it => it.id !== id);
+  Store.saveItems(items);
+  toast('Item delete ho gaya.');
+  closeItemModal();
+  renderStockList();
+  renderDashboard();
+  renderMoveView();
+});
+
+function populateCategoryDatalist() {
+  const items = Store.getItems();
+  const cats = [...new Set(items.map(i => i.category))];
+  document.getElementById('categoryList').innerHTML =
+    cats.map(c => `<option value="${escapeHtml(c)}">`).join('');
+}
+
+/* ---------------------------------------------------------------------- */
+/* STOCK LIST VIEW                                                        */
+/* ---------------------------------------------------------------------- */
+const searchInput = document.getElementById('searchInput');
+const categoryFilter = document.getElementById('categoryFilter');
+
+searchInput.addEventListener('input', renderStockList);
+categoryFilter.addEventListener('change', renderStockList);
+
+function renderStockList() {
+  const items = Store.getItems();
+
+  const cats = [...new Set(items.map(i => i.category))];
+  const currentFilter = categoryFilter.value;
+  categoryFilter.innerHTML = '<option value="">Sab categories</option>' +
+    cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  categoryFilter.value = currentFilter;
+
+  const q = searchInput.value.trim().toLowerCase();
+  const filtered = items.filter(it => {
+    const matchesQ = !q || it.name.toLowerCase().includes(q) || it.sku.toLowerCase().includes(q);
+    const matchesCat = !categoryFilter.value || it.category === categoryFilter.value;
+    return matchesQ && matchesCat;
+  });
+
+  const tbody = document.querySelector('#stockTable tbody');
+  tbody.innerHTML = filtered.map(it => `
+    <tr>
+      <td>${escapeHtml(it.name)}</td>
+      <td>${escapeHtml(it.sku)}</td>
+      <td>${escapeHtml(it.category)}</td>
+      <td>${it.qty <= it.threshold ? `<span class="tag tag--out">${it.qty}</span>` : it.qty}</td>
+      <td>${money(it.price)}</td>
+      <td>${money(it.qty * it.price)}</td>
+      <td>
+        <div class="row-actions">
+          <button data-edit="${it.id}">Edit</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('stockEmpty').style.display = filtered.length ? 'none' : 'block';
+
+  tbody.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = Store.getItems().find(i => i.id === btn.dataset.edit);
+      openItemModal(item);
+    });
+  });
+}
+
+/* ---------------------------------------------------------------------- */
+/* ADD / REMOVE STOCK (MOVE) VIEW                                         */
+/* ---------------------------------------------------------------------- */
+const moveItemSelect = document.getElementById('moveItemSelect');
+const moveForm = document.getElementById('moveForm');
+const moveMsg = document.getElementById('moveMsg');
+let currentMoveType = 'in';
+
+document.querySelectorAll('.toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    currentMoveType = btn.dataset.type;
+  });
+});
+
+moveItemSelect.addEventListener('change', renderMoveItemPreview);
+
+function renderMoveView() {
+  const items = Store.getItems();
+  const currentVal = moveItemSelect.value;
+  moveItemSelect.innerHTML = items.map(it =>
+    `<option value="${it.id}">${escapeHtml(it.name)} (${escapeHtml(it.sku)})</option>`
+  ).join('');
+  if (currentVal) moveItemSelect.value = currentVal;
+  renderMoveItemPreview();
+  renderTxTable();
+}
+
+function renderMoveItemPreview() {
+  const items = Store.getItems();
+  const item = items.find(i => i.id === moveItemSelect.value);
+  const box = document.getElementById('moveItemPreview');
+  if (!item) {
+    box.innerHTML = '<p class="empty-note">Item select karein details dekhne ke liye.</p>';
+    return;
+  }
+  box.innerHTML = `
+    <p class="ip-name">${escapeHtml(item.name)}</p>
+    <div class="ip-row"><span>SKU</span><span>${escapeHtml(item.sku)}</span></div>
+    <div class="ip-row"><span>Category</span><span>${escapeHtml(item.category)}</span></div>
+    <div class="ip-row"><span>Current qty</span><span>${item.qty}</span></div>
+    <div class="ip-row"><span>Price / unit</span><span>${money(item.price)}</span></div>
+  `;
+}
+
+moveForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const items = Store.getItems();
+  const item = items.find(i => i.id === moveItemSelect.value);
+  const qty = Number(document.getElementById('moveQty').value);
+  const note = document.getElementById('moveNote').value.trim();
+
+  if (!item) {
+    moveMsg.textContent = 'Pehle koi item add karein.';
+    moveMsg.className = 'form-msg is-error';
+    return;
+  }
+  if (currentMoveType === 'out' && qty > item.qty) {
+    moveMsg.textContent = `Sirf ${item.qty} unit stock mein hai, itna nahi nikal sakte.`;
+    moveMsg.className = 'form-msg is-error';
+    return;
+  }
+
+  item.qty = currentMoveType === 'in' ? item.qty + qty : item.qty - qty;
+  Store.saveItems(items);
+
+  const tx = Store.getTransactions();
+  tx.unshift({
+    id: uid('tx'),
+    itemId: item.id,
+    itemName: item.name,
+    type: currentMoveType,
+    qty, note,
+    date: todayISO()
+  });
+  Store.saveTransactions(tx);
+
+  moveMsg.textContent = 'Record ho gaya.';
+  moveMsg.className = 'form-msg is-good';
+  moveForm.reset();
+  renderMoveItemPreview();
+  renderTxTable();
+  renderDashboard();
+  renderStockList();
+});
+
+function renderTxTable() {
+  const tx = Store.getTransactions();
+  const tbody = document.querySelector('#txTable tbody');
+  tbody.innerHTML = tx.map(t => `
+    <tr>
+      <td>${fmtDate(t.date)}</td>
+      <td>${escapeHtml(t.itemName)}</td>
+      <td><span class="tag tag--${t.type}">${t.type === 'in' ? 'IN' : 'OUT'}</span></td>
+      <td>${t.qty}</td>
+      <td>${escapeHtml(t.note || '—')}</td>
+    </tr>
+  `).join('');
+  document.getElementById('txEmpty').style.display = tx.length ? 'none' : 'block';
+}
+
+/* ---------------------------------------------------------------------- */
+/* DASHBOARD                                                              */
+/* ---------------------------------------------------------------------- */
+function renderDashboard() {
+  const items = Store.getItems();
+  const tx = Store.getTransactions();
+
+  const totalQty = items.reduce((s, i) => s + i.qty, 0);
+  const totalValue = items.reduce((s, i) => s + i.qty * i.price, 0);
+  const lowStock = items.filter(i => i.qty <= i.threshold);
+
+  document.getElementById('statTotalItems').textContent = items.length;
+  document.getElementById('statTotalQty').textContent = totalQty;
+  document.getElementById('statTotalValue').textContent = money(totalValue);
+  document.getElementById('statLowStock').textContent = lowStock.length;
+
+  const lowBody = document.querySelector('#lowStockTable tbody');
+  lowBody.innerHTML = lowStock.map(i => `
+    <tr>
+      <td>${escapeHtml(i.name)}</td>
+      <td>${escapeHtml(i.sku)}</td>
+      <td>${i.qty}</td>
+      <td>${i.threshold}</td>
+    </tr>
+  `).join('');
+  document.getElementById('lowStockEmpty').style.display = lowStock.length ? 'none' : 'block';
+
+  const recentBody = document.querySelector('#recentActivityTable tbody');
+  recentBody.innerHTML = tx.slice(0, 8).map(t => `
+    <tr>
+      <td>${fmtDate(t.date)}</td>
+      <td>${escapeHtml(t.itemName)}</td>
+      <td><span class="tag tag--${t.type}">${t.type === 'in' ? 'IN' : 'OUT'}</span></td>
+      <td>${t.qty}</td>
+      <td>${escapeHtml(t.note || '—')}</td>
+    </tr>
+  `).join('');
+}
+
+/* ---------------------------------------------------------------------- */
+/* REPORTS                                                                */
+/* ---------------------------------------------------------------------- */
+let lastReportRows = null;
+let lastReportHeaders = null;
+
+function inDateRange(iso) {
+  const from = document.getElementById('reportFrom').value;
+  const to = document.getElementById('reportTo').value;
+  const d = new Date(iso);
+  if (from && d < new Date(from)) return false;
+  if (to && d > new Date(to + 'T23:59:59')) return false;
+  return true;
+}
+
+function buildReport() {
+  const type = document.querySelector('input[name="reportType"]:checked').value;
+  const items = Store.getItems();
+  const tx = Store.getTransactions();
+
+  if (type === 'full') {
+    return {
+      headers: ['Item', 'SKU', 'Category', 'Qty', 'Price', 'Value'],
+      rows: items.map(i => [i.name, i.sku, i.category, i.qty, i.price, (i.qty * i.price).toFixed(2)])
+    };
+  }
+  if (type === 'low') {
+    const low = items.filter(i => i.qty <= i.threshold);
+    return {
+      headers: ['Item', 'SKU', 'Category', 'Qty', 'Threshold'],
+      rows: low.map(i => [i.name, i.sku, i.category, i.qty, i.threshold])
+    };
+  }
+  // transactions
+  const filtered = tx.filter(t => inDateRange(t.date));
+  return {
+    headers: ['Date', 'Item', 'Type', 'Qty', 'Note'],
+    rows: filtered.map(t => [fmtDate(t.date), t.itemName, t.type.toUpperCase(), t.qty, t.note || ''])
+  };
+}
+
+document.getElementById('previewReportBtn').addEventListener('click', () => {
+  const { headers, rows } = buildReport();
+  lastReportHeaders = headers;
+  lastReportRows = rows;
+
+  document.querySelector('#reportTable thead tr').innerHTML =
+    headers.map(h => `<th>${escapeHtml(h)}</th>`).join('');
+  document.querySelector('#reportTable tbody').innerHTML =
+    rows.map(r => `<tr>${r.map(c => `<td>${escapeHtml(String(c))}</td>`).join('')}</tr>`).join('');
+
+  document.getElementById('reportEmpty').style.display = rows.length ? 'none' : 'block';
+  toast(`Report ready — ${rows.length} rows.`);
+});
+
+document.getElementById('downloadReportBtn').addEventListener('click', () => {
+  const { headers, rows } = lastReportRows ? { headers: lastReportHeaders, rows: lastReportRows } : buildReport();
+  if (!rows.length) {
+    toast('Report khaali hai, download karne ko kuch nahi.');
+    return;
+  }
+  const csv = [headers, ...rows]
+    .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `report-${document.querySelector('input[name="reportType"]:checked').value}-${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV download ho gayi.');
+});
+
+/* ---------------------------------------------------------------------- */
+/* BACKUP: EXPORT / IMPORT full data as JSON                              */
+/* ---------------------------------------------------------------------- */
+document.getElementById('exportAllBtn').addEventListener('click', () => {
+  const data = { items: Store.getItems(), transactions: Store.getTransactions(), exportedAt: todayISO() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `stockledger-backup-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup file download ho gayi.');
+});
+
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data.items) || !Array.isArray(data.transactions)) throw new Error('bad shape');
+      Store.saveItems(data.items);
+      Store.saveTransactions(data.transactions);
+      toast('Backup import ho gaya.');
+      renderAll();
+    } catch (err) {
+      toast('Yeh file valid backup nahi hai.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ---------------------------------------------------------------------- */
+/* UTIL                                                                   */
+/* ---------------------------------------------------------------------- */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderAll() {
+  renderDashboard();
+  renderStockList();
+  renderMoveView();
+}
+
+/* ---------------------------------------------------------------------- */
+/* SEED (only runs once, if storage is empty, so the app isn't blank)     */
+/* ---------------------------------------------------------------------- */
+function seedIfEmpty() {
+  if (Store.getItems().length) return;
+  const items = [
+    { id: uid('item'), name: 'USB-C Cable 1m', sku: 'CBL-001', category: 'Accessories', qty: 42, price: 350, threshold: 10, createdAt: todayISO() },
+    { id: uid('item'), name: 'Wireless Mouse', sku: 'MSE-014', category: 'Peripherals', qty: 6, price: 1450, threshold: 8, createdAt: todayISO() },
+    { id: uid('item'), name: 'HDMI Cable 2m', sku: 'CBL-009', category: 'Accessories', qty: 20, price: 500, threshold: 5, createdAt: todayISO() },
+  ];
+  Store.saveItems(items);
+}
+
+seedIfEmpty();
+renderAll();
+
+</script>
+</body>
+</html>
